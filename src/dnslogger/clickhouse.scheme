@@ -1,0 +1,1 @@
+create table pdns_query_logs (log_timestamp DateTime, client_ip String, query String) engine=Log;
