@@ -25,6 +25,10 @@ var (
 	clickhouse string
 
 	workers int
+
+	dbname string
+
+	tablename string
 )
 
 func init() {
@@ -33,7 +37,9 @@ func init() {
 	flag.StringVar(&clickhouse, "clickhouse", "127.0.0.1:9000", "Clickhouse endpoints, comma separated")
 	flag.StringVar(&username, "username", "", "Backend usename")
 	flag.StringVar(&password, "password", "", "Backend password")
-	flag.IntVar(&workers, "workers", 10, "Number of elasticsearch workers")
+	flag.StringVar(&dbname, "database", "pdns", "Database name")
+	flag.StringVar(&tablename, "table", "pdns_query_logs", "Table name")
+	flag.IntVar(&workers, "workers", 10, "Number of open connections to clickhouse")
 }
 
 func RunLoggerServer(ctx context.Context, sl *dnslogger.DNSLogServiceServer, port uint) {
@@ -60,7 +66,7 @@ func main() {
 	log.Printf("Starting log service")
 
 	sl := &dnslogger.DNSLogServiceServer{}
-	sl.Init(clickhouse, username, password, workers)
+	sl.Init(clickhouse, username, password, dbname, tablename, workers)
 	go RunLoggerServer(ctx, sl, port)
 	<-ctx.Done()
 }
