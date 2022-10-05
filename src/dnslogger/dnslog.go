@@ -22,11 +22,12 @@ func (logger logger) Errorf(format string, args ...interface{}) {
 }
 
 type DNSLogServiceServer struct {
-	Ch    ch.Conn
-	Table string
+	Ch            ch.Conn
+	Table         string
+	ResponseTable string
 }
 
-func (svc *DNSLogServiceServer) Init(clickhouse string, u string, p string, d string, t string, w int) {
+func (svc *DNSLogServiceServer) Init(clickhouse string, u string, p string, d string, t string, rt string, w int) {
 	Cho, err := ch.Open(&ch.Options{
 		Addr: strings.Split(clickhouse, ","),
 		Auth: ch.Auth{
@@ -44,6 +45,7 @@ func (svc *DNSLogServiceServer) Init(clickhouse string, u string, p string, d st
 	}
 	svc.Ch = Cho
 	svc.Table = t
+	svc.ResponseTable = rt
 }
 
 func (svc *DNSLogServiceServer) Worker(conn net.Conn) error {
@@ -65,12 +67,25 @@ func (svc *DNSLogServiceServer) Worker(conn net.Conn) error {
 			continue
 		}
 		if err = proto.Unmarshal(b[2:], msg); err != nil {
+			qstring := ""
 			if msg.From != nil && msg.TimeSec != nil && msg.Question != nil {
 				slog.Debugf("Query %s", *msg.Question.QName)
-				qstring := fmt.Sprintf("INSERT INTO %s VALUES (%d,'%s','%s')", svc.Table, time.Now().Unix(), net.IP(msg.From).String(), *msg.Question.QName)
+				qstring = fmt.Sprintf("INSERT INTO %s VALUES (%d,'%s','%s')", svc.Table, time.Now().Unix(), net.IP(msg.From).String(), *msg.Question.QName)
 				err = svc.Ch.AsyncInsert(context.Background(), qstring, false)
 				if err != nil {
 					slog.Debug(err)
+				}
+			} else if msg.To != nil && msg.TimeSec != nil && msg.Response != nil && svc.ResponseTable != "" {
+				slog.Debugf("Response %s", net.IP(msg.To).String())
+				for _, rs := range msg.Response.Rrs {
+					data := ""
+					if *rs.Type == 1 || *rs.Type == 28 {
+						data = net.IP(rs.Rdata).String()
+					} else {
+						data = string(data)
+					}
+					qstring = fmt.Sprintf("INSERT INTO %s VALUES (%d,'%s','%s',%d,'%s')", svc.ResponseTable, time.Now().Unix(), net.IP(msg.To).String(), *rs.Name, *rs.Type, data)
+					err = svc.Ch.AsyncInsert(context.Background(), qstring, false)
 				}
 			} else {
 				slog.Debugf("Empty content %d", msg.Type)

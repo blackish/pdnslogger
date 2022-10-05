@@ -29,6 +29,8 @@ var (
 	dbname string
 
 	tablename string
+
+	responseTablename string
 )
 
 func init() {
@@ -39,6 +41,7 @@ func init() {
 	flag.StringVar(&password, "password", "", "Backend password")
 	flag.StringVar(&dbname, "database", "pdns", "Database name")
 	flag.StringVar(&tablename, "table", "pdns_query_logs", "Table name")
+	flag.StringVar(&responseTablename, "response_table", "", "Response table name")
 	flag.IntVar(&workers, "workers", 10, "Number of open connections to clickhouse")
 }
 
@@ -66,7 +69,7 @@ func main() {
 	log.Printf("Starting log service")
 
 	sl := &dnslogger.DNSLogServiceServer{}
-	sl.Init(clickhouse, username, password, dbname, tablename, workers)
+	sl.Init(clickhouse, username, password, dbname, tablename, responseTablename, workers)
 	go RunLoggerServer(ctx, sl, port)
 	<-ctx.Done()
 }
