@@ -65,11 +65,12 @@ func (svc *DNSLogServiceServer) Worker(conn net.Conn) error {
 			l = uint(b[npos+1]) + uint(b[npos])*256
 			slog.Debug("Read successful")
 			slog.Debugf("Read %d", n)
+			slog.Debugf("Total %d, pos %d", n, npos+l+2)
 			if uint(n) < npos+l+2 {
 				slog.Debugf("Read %d, expect %d", n, l)
 				continue
 			}
-			if err = proto.Unmarshal(b[npos+2:npos+2+l], msg); err != nil {
+			if err = proto.Unmarshal(b[npos+2:npos+2+l+1], msg); err != nil {
 				qstring := ""
 				if msg.From != nil && msg.TimeSec != nil && msg.Question != nil {
 					slog.Debugf("Query %s", *msg.Question.QName)
