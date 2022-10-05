@@ -96,8 +96,8 @@ func (svc *DNSLogServiceServer) Worker(conn net.Conn) error {
 			} else {
 				slog.Debug("Parse error")
 			}
+			npos = npos + l + 2
 		}
-		npos = npos + l + 2
 	}
 	slog.Debug("Worker exited")
 	_ = conn.Close()
