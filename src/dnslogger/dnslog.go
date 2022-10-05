@@ -59,7 +59,8 @@ func (svc *DNSLogServiceServer) Worker(conn net.Conn) error {
 			slog.Debug("Error reading")
 			break
 		}
-		npos := 0
+		var npos uint
+		npos = 0
 		for npos < uint(n) {
 			l = uint(b[npos+1]) + uint(b[npos])*256
 			slog.Debug("Read successful")
