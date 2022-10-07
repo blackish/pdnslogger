@@ -72,14 +72,15 @@ func (svc *DNSLogServiceServer) Worker(conn net.Conn) error {
 			}
 			if err = proto.Unmarshal(b[npos+2:npos+2+l+1], msg); err != nil {
 				qstring := ""
-				if msg.From != nil && msg.TimeSec != nil && msg.Question != nil {
+				if msg.From != nil && msg.TimeSec != nil && msg.Question != nil && *msg.Type == 1 {
 					slog.Debugf("Query %s", *msg.Question.QName)
 					qstring = fmt.Sprintf("INSERT INTO %s VALUES (%d,'%s','%s')", svc.Table, time.Now().Unix(), net.IP(msg.From).String(), *msg.Question.QName)
 					err = svc.Ch.AsyncInsert(context.Background(), qstring, false)
 					if err != nil {
 						slog.Debug(err)
 					}
-				} else if msg.To != nil && msg.TimeSec != nil && msg.Response != nil && svc.ResponseTable != "" {
+				}
+				if msg.To != nil && msg.TimeSec != nil && msg.Response != nil && svc.ResponseTable != "" && *msg.Type == 2 {
 					slog.Debugf("Response %s", net.IP(msg.To).String())
 					for _, rs := range msg.Response.Rrs {
 						data := ""
